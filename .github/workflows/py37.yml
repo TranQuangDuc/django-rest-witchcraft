@@ -1,0 +1,46 @@
+name: Python 3.7
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        ports:
+          - "5432:5432"
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test
+    container:
+      image: python:3.7
+    strategy:
+      max-parallel: 10
+      matrix:
+        django:
+          - django<2
+          - django<2.1
+          - django<2.2
+          - django<2.3
+        drf:
+          - djangorestframework<3.9
+          - djangorestframework<3.10
+          - djangorestframework<4
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install dependencies
+      run: |
+        pip install "${{ matrix.django }}" "${{ matrix.drf }}"
+        pip install -r requirements.txt
+    - name: Lint with pre-commit
+      run: |
+        make lint
+    - name: Test with pytest
+      run: |
+        make coverage
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@postgres/test
